@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uobgen"
+version = "0.1.0"
+description = "Unified Optimization Benchmark dataset generators"
+authors = [{name = "OptSet Codex"}]
+license = {text = "Apache-2.0"}
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy"
+]
+readme = "README.md"
+
+[project.scripts]
+uobgen = "uobgen.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["uobgen"]
