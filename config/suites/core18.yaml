@@ -1,301 +1,61 @@
-suite: core18
-description: Core 18 optimization problem generators with S/M/L scales.
-scales:
-  S:
-    label: Small
-  M:
-    label: Medium
-  L:
-    label: Large
-problems:
-  A1_QP:
-    scales:
-      S:
-        n: 200
-        kappa: [1e1, 1e3]
-      M:
-        n: 2000
-        kappa: [1e1, 1e3, 1e5]
-      L:
-        n: 50000
-        kappa: [1e3, 1e5]
-    seeds: 2
-  A2_LogReg:
-    scales:
-      S:
-        m: 5000
-        n: 500
-        rho: [0.0, 0.5]
-        lambda: [1e-4, 1e-3]
-      M:
-        m: 50000
-        n: 5000
-        rho: [0.0, 0.5, 0.9]
-        lambda: [1e-3, 1e-2]
-      L:
-        m: 1000000
-        n: 50000
-        rho: [0.0, 0.5, 0.9]
-        lambda: [1e-2, 1e-1]
-    seeds: 1
-  A3_Rosenbrock:
-    scales:
-      S:
-        n: 100
-        init_sigma: [0.1, 1.0]
-      M:
-        n: 1000
-        init_sigma: [0.1, 1.0, 5.0]
-      L:
-        n: 5000
-        init_sigma: [0.1, 1.0, 5.0]
-    seeds: 1
-  A4_ECQP:
-    scales:
-      S:
-        n: 1000
-        p: 50
-        kappa_Q: [1e1, 1e3]
-      M:
-        n: 5000
-        p: 200
-        kappa_Q: [1e1, 1e3]
-      L:
-        n: 50000
-        p: 500
-        kappa_Q: [1e1, 1e3]
-    seeds: 1
-  A5_TRS:
-    scales:
-      S:
-        n: 200
-        neg_ratio: [0.05, 0.2]
-        theta_deg: [60, 89]
-      M:
-        n: 2000
-        neg_ratio: [0.05, 0.2]
-        theta_deg: [60, 89]
-      L:
-        n: 10000
-        neg_ratio: [0.05, 0.2]
-        theta_deg: [60, 89]
-    seeds: 1
-  A6_BoxQP:
-    scales:
-      S:
-        n: 1000
-        box_width: [1.0, 10.0]
-      M:
-        n: 10000
-        box_width: [1.0, 10.0]
-      L:
-        n: 50000
-        box_width: [1.0, 10.0]
-    seeds: 1
-  B1_LASSO:
-    scales:
-      S:
-        m: 2000
-        n: 4000
-        sparsity: [0.01, 0.05]
-        rho: [0.0, 0.5]
-        snr: [10, 30]
-      M:
-        m: 50000
-        n: 50000
-        sparsity: [0.01, 0.05, 0.1]
-        rho: [0.0, 0.5, 0.9]
-        snr: [10, 30]
-      L:
-        m: 500000
-        n: 200000
-        sparsity: [0.01, 0.05, 0.1]
-        rho: [0.0, 0.5, 0.9]
-        snr: [10, 30]
-    seeds: 1
-  B2_ElasticNet:
-    scales:
-      S:
-        m: 2000
-        n: 4000
-        rho: [0.0, 0.5]
-        lambda1: [1e-3, 1e-2]
-        lambda2: [1e-3, 1e-1]
-      M:
-        m: 50000
-        n: 50000
-        rho: [0.0, 0.5, 0.9]
-        lambda1: [1e-3, 1e-2]
-        lambda2: [1e-3, 1e-1]
-      L:
-        m: 500000
-        n: 200000
-        rho: [0.0, 0.5, 0.9]
-        lambda1: [1e-3, 1e-2]
-        lambda2: [1e-3, 1e-1]
-    seeds: 1
-  B3_SVM:
-    scales:
-      S:
-        m: 10000
-        n: 1000
-        mu_norm: [0.5, 1.0]
-        rho: [0.0, 0.5]
-      M:
-        m: 100000
-        n: 10000
-        mu_norm: [0.5, 1.0, 2.0]
-        rho: [0.0, 0.5, 0.9]
-      L:
-        m: 1000000
-        n: 50000
-        mu_norm: [0.5, 1.0, 2.0]
-        rho: [0.0, 0.5, 0.9]
-    seeds: 1
-  B4_TV:
-    scales:
-      S:
-        image_size: 256
-        blocks: [8, 16]
-        snr: [20, 40]
-      M:
-        image_size: 512
-        blocks: [16, 32]
-        snr: [20, 40]
-      L:
-        image_size: 1024
-        blocks: [16, 32]
-        snr: [20, 40]
-    seeds: 1
-  B5_GroupLasso:
-    scales:
-      S:
-        m: 10000
-        n: 5000
-        rho: [0.0, 0.5]
-        group_mode: ["uniform", "tail"]
-      M:
-        m: 100000
-        n: 20000
-        rho: [0.0, 0.5, 0.9]
-        group_mode: ["uniform", "tail"]
-      L:
-        m: 500000
-        n: 50000
-        rho: [0.0, 0.5, 0.9]
-        group_mode: ["uniform", "tail"]
-    seeds: 1
-  B6_NC_Sparse:
-    scales:
-      S:
-        m: 20000
-        n: 2000
-        rho: [0.0, 0.5]
-        a: [3.0, 3.7]
-        lambda: [1e-3, 1e-2]
-      M:
-        m: 200000
-        n: 10000
-        rho: [0.0, 0.5, 0.9]
-        a: [3.0, 3.7, 5.0]
-        lambda: [1e-3, 1e-2]
-      L:
-        m: 1000000
-        n: 50000
-        rho: [0.0, 0.5, 0.9]
-        a: [3.0, 3.7, 5.0]
-        lambda: [1e-3, 1e-2]
-    seeds: 1
-  C1_VI:
-    scales:
-      S:
-        n: 500
-        mu: [0.0, 1e-3]
-        cond: [1e1, 1e3]
-        set_type: ["box", "simplex"]
-      M:
-        n: 5000
-        mu: [0.0, 1e-3, 1e-1]
-        cond: [1e1, 1e3]
-        set_type: ["box", "simplex"]
-      L:
-        n: 50000
-        mu: [0.0, 1e-3, 1e-1]
-        cond: [1e1, 1e3]
-        set_type: ["box", "simplex"]
-    seeds: 1
-  C2_LCP:
-    scales:
-      S:
-        n: 200
-        delta: [1e-1, 1e-3]
-      M:
-        n: 2000
-        delta: [1e-1, 1e-3, 1e-5]
-      L:
-        n: 10000
-        delta: [1e-1, 1e-3, 1e-5]
-    seeds: 1
-  C3_MPCC:
-    scales:
-      S:
-        n: 500
-        p: 200
-        b_scale: [1e-2, 1e-1]
-      M:
-        n: 2000
-        p: 800
-        b_scale: [1e-2, 1e-1, 1]
-      L:
-        n: 10000
-        p: 3000
-        b_scale: [1e-2, 1e-1, 1]
-    seeds: 1
-  D1_SOCP:
-    scales:
-      S:
-        m: 2000
-        n: 4000
-        R: [1.0, 5.0]
-        snr: [10, 30]
-      M:
-        m: 50000
-        n: 50000
-        R: [1.0, 5.0]
-        snr: [10, 30]
-      L:
-        m: 500000
-        n: 200000
-        R: [1.0, 5.0]
-        snr: [10, 30]
-    seeds: 1
-  D2_BP:
-    scales:
-      S:
-        m: 500
-        n: 2000
-        sparsity: [0.01, 0.05]
-        rho: [0.0, 0.5]
-      M:
-        m: 5000
-        n: 20000
-        sparsity: [0.01, 0.05, 0.1]
-        rho: [0.0, 0.5, 0.9]
-      L:
-        m: 20000
-        n: 100000
-        sparsity: [0.01, 0.05, 0.1]
-        rho: [0.0, 0.5, 0.9]
-    seeds: 1
-  D3_SDP:
-    scales:
-      S:
-        n: 40
-        p: [0.1, 0.3]
-      M:
-        n: 100
-        p: [0.1, 0.3, 0.5]
-      L:
-        n: 200
-        p: [0.1, 0.3, 0.5]
-    seeds: 1
+{
+  "description": "Core 18-problem benchmark with S/M/L scales",
+  "problems": {
+    "A1_QP": {
+      "S": {"knobs": [{"n": 64, "kappa": 1000}], "seeds": [0]},
+      "M": {"knobs": [{"n": 256, "kappa": 10000}], "seeds": [1]},
+      "L": {"knobs": [{"n": 512, "kappa": 100000}], "seeds": [2]}
+    },
+    "A2_LogReg": {
+      "S": {"knobs": [{"m": 200, "n": 20, "rho": 0.3, "lambda": 0.1}], "seeds": [0]}
+    },
+    "A3_Rosenbrock": {
+      "S": {"knobs": [{"n": 20, "init_sigma": 1.0}], "seeds": [0]}
+    },
+    "A4_ECQP": {
+      "S": {"knobs": [{"n": 40, "p": 5, "kappa": 1000}], "seeds": [0]}
+    },
+    "A5_TRS": {
+      "S": {"knobs": [{"n": 30, "neg_ratio": 0.2, "theta": 75, "delta": 1.0}], "seeds": [0]}
+    },
+    "A6_BoxQP": {
+      "S": {"knobs": [{"n": 30, "width": 2.0}], "seeds": [0]}
+    },
+    "B1_LASSO": {
+      "S": {"knobs": [{"m": 60, "n": 40, "sparsity": 0.1, "rho": 0.2, "snr": 20, "lambda": 0.1}], "seeds": [0]}
+    },
+    "B2_ElasticNet": {
+      "S": {"knobs": [{"m": 60, "n": 40, "lambda1": 0.1, "lambda2": 0.1, "rho": 0.2}], "seeds": [0]}
+    },
+    "B3_SVM": {
+      "S": {"knobs": [{"m": 80, "n": 30, "rho": 0.1, "mu_norm": 1.0, "gamma": 0.1}], "seeds": [0]}
+    },
+    "B4_TV": {
+      "S": {"knobs": [{"H": 16, "W": 16, "blocks": 4, "lambda": 0.1, "noise": 0.05}], "seeds": [0]}
+    },
+    "B5_GroupLasso": {
+      "S": {"knobs": [{"m": 80, "n": 40, "groups": 5, "lambda": 0.1}], "seeds": [0]}
+    },
+    "B6_NC_Sparse": {
+      "S": {"knobs": [{"m": 100, "n": 20, "rho": 0.2, "snr": 10, "lambda": 0.1, "a": 3.7}], "seeds": [0]}
+    },
+    "C1_VI": {
+      "S": {"knobs": [{"n": 20, "mu": 0.01, "rho": 0.2, "set": "box"}], "seeds": [0]}
+    },
+    "C2_LCP": {
+      "S": {"knobs": [{"n": 20, "delta": 0.01}], "seeds": [0]}
+    },
+    "C3_MPCC": {
+      "S": {"knobs": [{"n": 20, "p": 10, "b_scale": 0.1}], "seeds": [0]}
+    },
+    "D1_SOCP": {
+      "S": {"knobs": [{"m": 60, "n": 20, "R": 1.0, "snr": 10}], "seeds": [0]}
+    },
+    "D2_BP": {
+      "S": {"knobs": [{"m": 30, "n": 60, "sparsity": 0.1}], "seeds": [0]}
+    },
+    "D3_SDP": {
+      "S": {"knobs": [{"n": 10, "p": 0.3}], "seeds": [0]}
+    }
+  }
+}

@@ -3,20 +3,26 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "uobgen"
+name = "uobench"
 version = "0.1.0"
-description = "Unified Optimization Benchmark dataset generators"
-authors = [{name = "OptSet Codex"}]
+description = "Unified Optimization Benchmark with certified feasibility and diagnostics"
+readme = "README.md"
+authors = [
+    {name = "OpenAI Codex"}
+]
 license = {text = "Apache-2.0"}
 requires-python = ">=3.11"
 dependencies = [
     "numpy",
     "scipy"
 ]
-readme = "README.md"
+
+[project.optional-dependencies]
+test = ["pytest"]
 
 [project.scripts]
-uobgen = "uobgen.cli:main"
+uobench = "uobench.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["uobgen"]
+where = ["."]
+include = ["uobench*"]

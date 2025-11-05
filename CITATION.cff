@@ -1,9 +1,11 @@
 cff-version: 1.2.0
-title: "UOBGen: Unified Optimization Benchmark Generator"
+title: "uobench: Unified Optimization Benchmark"
 authors:
   - family-names: Codex
-    given-names: OptSet
-version: 0.1.0
-date-released: 2024-01-01
+    given-names: OpenAI
+version: "0.1.0"
+abstract: |
+  uobench 提供经过认证可行性的优化问题生成器、诊断工具以及基线求解器，便于研究者开展可重复的基准测试。
 license: Apache-2.0
-repository-code: https://example.com/uobgen
+date-released: 2024-05-01
+url: https://example.com/uobench
