@@ -92,51 +92,58 @@ uobench solve \
    若未指定 `--config`，CLI 默认读取 `config/suites/<suite>.yaml`。
 
 ### 2.2 直接调用生成器
-若只需一次性生成某个特定参数组合，可在 Python 交互式脚本中调用问题生成函数：
+若只需一次性生成某个特定参数组合，可通过问题注册表直接调用：
 ```python
-from numpy.random import default_rng
-from uobench.problems.a_smooth import generate_a1_qp
+from uobench.core.spec import PROBLEM_REGISTRY
 
-rng = default_rng(2024)
-instance = generate_a1_qp(n=200, kappa=1e4, rng=rng, extreme=False)
+spec = PROBLEM_REGISTRY["A1_QP"]
+instance = spec.generator(seed=2024, knobs={"n": 200, "kappa": 1e4}, extreme=False)
+data = instance["data"]  # 包含 Q、b、x_star 等数组
 ```
-返回的 `instance` 字典包含 `data`, `diagnostics`, `witness` 等字段，可直接传入 `uobench.io.save_instance` 进行落盘：
+返回的 `instance` 字典包含 `data`、`dims`、`knobs`、`witness`、`readme` 等字段，可配合 `uobench.io.save_instance` 落盘：
 ```python
+from pathlib import Path
 from uobench.io import save_instance
-save_instance(instance, root="./custom", suite="play", scale="S", seed_uid="seed_2024")
+
+root = Path("./custom")
+meta = {
+    "id": "A1_QP",
+    "name": "Strongly-convex QP",
+    "family": "smooth",
+    "seed": 2024,
+    "dims": instance["dims"],
+    "knobs": instance["knobs"],
+    "witness": instance["witness"],
+    "diagnostics": {},
+}
+save_instance(root=root, suite="play", problem_id="A1_QP", scale="S", seed_tag="seed_2024", meta=meta, arrays=data, readme=instance["readme"])
 ```
 
 ### 2.3 控制极端难度
-CLI/生成函数均接受 `extreme` 标志。当为 `True` 时，生成器会在 [`uobench/core/diagnostics.py`](uobench/core/diagnostics.py) 中定义的阈值下反复重采样（最多 `max_retry` 次）以满足条件，例如：
-- QP：`cond(Q) ≥ 1e6`
-- LASSO：特征列相干度接近 1
-- LCP：`δ` 极小导致最小特征值趋近 0
-
-如果极端条件无法满足，生成器会抛出异常，提示增大 `max_retry` 或放宽阈值。
+CLI/生成函数均接受 `extreme` 标志。当为 `True` 时，生成器会自动将旋钮推向更具挑战性的配置，例如提高条件数、缩小约束集或提升噪声强度；最终数值会记录在生成目录的 `meta.json` → `diagnostics` 字段中。若极端模式下仍无法满足需求，可手动设定更激进的旋钮，或在自定义生成器中加入额外筛选逻辑。
 
 ---
 
 ## 3. 新增自定义问题生成器
 
 ### 3.1 注册新问题
-1. 在相应目录（例如 `uobench/problems/a_smooth.py`）中实现生成函数：
+1. 在相应目录（例如 `uobench/problems/a_smooth.py`）中实现生成函数，遵循统一签名：
    ```python
-   def generate_my_problem(*, rng, extreme=False, **knobs):
-       """返回包含 data/diagnostics/witness 的实例字典。"""
+   def generate_my_problem(seed: int, knobs: Dict, extreme: bool) -> Dict:
+       rng = np.random.default_rng(seed)
        ...
        return {
-           "id": "AX_MY_PROB",
-           "family": "smooth-unconstrained",
-           "dims": {...},
-           "knobs": knobs,
-           "diagnostics": diagnostics,
-           "witness": witness,
            "data": arrays,
+           "dims": {"n": n, ...},
+           "knobs": knobs_used,
+           "witness": witness,
+           "reference": reference_dict,
+           "readme": "...",
        }
    ```
 2. 在 [`uobench/problems/__init__.py`](uobench/problems/__init__.py) 中导出该函数。
-3. 在 [`uobench/core/spec.py`](uobench/core/spec.py) 的 `PROBLEM_REGISTRY` 中登记问题元数据：名称、默认旋钮、推荐尺度等。
-4. 如需 CLI 支持，在 YAML 套件文件中添加对应节点。
+3. 在 [`uobench/core/spec.py`](uobench/core/spec.py) 的 `PROBLEM_REGISTRY` 中登记问题元数据（问题 ID、名称、家族分类等）。
+4. 如需 CLI 支持，在 `config/suites/` 下的 YAML（JSON 格式）配置中添加对应条目，指定不同规模的旋钮网格与种子。
 
 ### 3.2 证书与诊断
 - 证书逻辑：
@@ -171,15 +178,15 @@ Result = Dict[str, Any]
 }
 ```
 如需新增自定义求解器：
-1. 在 `uobench/solvers/` 下创建文件，例如 `my_solver.py`，实现函数 `solve_my_solver(problem_id: str, arrays: Mapping[str, np.ndarray], **opts)`。
-2. 在 [`uobench/solvers/__init__.py`](uobench/solvers/__init__.py) 中注册入口，并更新 `SOLVER_REGISTRY` 字典：
+1. 在 `uobench/solvers/` 下创建文件，例如 `my_solver.py`，实现函数 `solve_my_solver(problem_id: str, arrays: Dict[str, np.ndarray], **opts)`。
+2. 在 [`uobench/solvers/__init__.py`](uobench/solvers/__init__.py) 中导出模块，并在 [`uobench/cli.py`](uobench/cli.py) 的 `SOLVER_DISPATCH` 字典中注册条目：
    ```python
-   SOLVER_REGISTRY = {
+   SOLVER_DISPATCH = {
        ...,
-       "my_solver": solve_my_solver,
+       "my-solver": solve_my_solver,
    }
    ```
-3. 若希望通过 CLI 调用，需要在 [`uobench/cli.py`](uobench/cli.py) 的 `solve` 子命令解析器中加入自定义选项解析逻辑（例如步长、线搜索参数等）。
+3. 如需额外 CLI 选项，可在 `solve` 子命令解析器中添加参数并传递给求解器。
 4. （可选）在 [`tests/test_solvers_smoke.py`](tests/test_solvers_smoke.py) 中添加烟雾测试，验证求解器在小规模实例上的运行结果。
 
 ### 4.2 利用已有工具
@@ -188,15 +195,15 @@ Result = Dict[str, Any]
 - 若求解器需要线性代数工具（例如 Haar 采样、Toeplitz 协方差、条件数估计），可直接使用 [`uobench/utils/linalg.py`](uobench/utils/linalg.py)。
 
 ### 4.3 与 CLI 集成
-一旦在 `SOLVER_REGISTRY` 注册成功，CLI `uobench solve --solver my_solver` 即可调用。可通过 `--max-iter`、`--tol` 等通用参数控制收敛准则；若需要额外选项，可在 CLI 中新增专用参数并传递给求解器。
+一旦在 `SOLVER_DISPATCH` 注册成功，CLI `uobench solve --solver my-solver` 即可调用。可通过 `--max-iter`、`--tol` 等通用参数控制收敛准则；若需要额外选项，可在 CLI 中新增专用参数并传递给求解器。
 
 ---
 
 ## 5. 常见问题（FAQ）
 
 - **如何保证生成数据可行？** 每个实例都包含 `witness` 字段，可通过 `uobench report` 或 `uobench.core.witness.verify` 自动验证。
-- **如何调试极端实例失败？** 使用 `--verbose`（`uobench generate` 支持）查看重采样次数，必要时增大 `--max-retry` 或放宽 `core/diagnostics.py` 中阈值。
-- **如何扩展报告内容？** 可修改 [`uobench/core/report.py`](uobench/core/report.py) 中的 `generate_markdown_report` 函数或模板文件（`uobench/reports/templates/*.j2`）。
+- **如何调试极端实例失败？** 查看 `meta.json` 中 `diagnostics` 字段是否已经接近阈值，必要时手动加大旋钮或关闭 `--extreme` 再重新生成。
+- **如何扩展报告内容？** 可修改 [`uobench/core/report.py`](uobench/core/report.py) 中的 `write_markdown`/`write_csv`/`write_json` 函数，或在生成后自行解析 `rows` 列表生成自定义摘要。
 
 ---
 

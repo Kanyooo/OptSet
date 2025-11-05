@@ -7,6 +7,20 @@ from typing import Dict
 import numpy as np
 
 
+def _infer_dim(arrays: Dict[str, np.ndarray]) -> int:
+    if "Q" in arrays:
+        return arrays["Q"].shape[0]
+    if "A" in arrays:
+        return arrays["A"].shape[1]
+    if "H" in arrays:
+        return arrays["H"].shape[0]
+    if "x_true" in arrays:
+        return arrays["x_true"].shape[0]
+    if "shape" in arrays:
+        return int(np.prod(arrays["shape"]))
+    raise ValueError("Cannot infer variable dimension from arrays")
+
+
 def _objective(problem_id: str, arrays: Dict[str, np.ndarray], x: np.ndarray) -> float:
     if problem_id in {"A1_QP", "A4_ECQP"}:
         Q = arrays["Q"]
@@ -38,7 +52,7 @@ def _gradient(problem_id: str, arrays: Dict[str, np.ndarray], x: np.ndarray) -> 
 
 
 def solve_gd(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 500, tol: float = 1e-6) -> Dict:
-    n = arrays.get("Q", arrays.get("A", np.zeros((1, 1)))).shape[1]
+    n = _infer_dim(arrays)
     x = np.zeros(n)
     history = {"f": [], "step": []}
     alpha = 1.0

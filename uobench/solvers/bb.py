@@ -6,11 +6,11 @@ from typing import Dict
 
 import numpy as np
 
-from .gd import _gradient, _objective
+from .gd import _gradient, _objective, _infer_dim
 
 
 def solve_bb(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 500, tol: float = 1e-6) -> Dict:
-    n = arrays.get("Q", arrays.get("A", np.zeros((1, 1)))).shape[1]
+    n = _infer_dim(arrays)
     x = np.zeros(n)
     history = {"f": [], "step": []}
     grad = _gradient(problem_id, arrays, x)

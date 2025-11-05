@@ -7,7 +7,7 @@ from typing import Dict
 import numpy as np
 
 from ..utils.linalg import project_box, project_simplex, project_ball
-from .gd import _objective
+from .gd import _objective, _infer_dim
 
 
 def prox_l1(v: np.ndarray, lam: float) -> np.ndarray:
@@ -61,7 +61,7 @@ def solve_projected_gd(problem_id: str, arrays: Dict[str, np.ndarray], max_iter:
     else:
         proj = lambda z: z
         grad_fn = lambda x: arrays.get("Q", np.eye(len(x))) @ x
-    n = arrays.get("H", arrays.get("Q", np.zeros((1, 1)))).shape[0]
+    n = _infer_dim(arrays)
     x = np.zeros(n)
     history = {"f": []}
     for it in range(max_iter):

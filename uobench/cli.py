@@ -74,8 +74,9 @@ def cmd_generate(args: argparse.Namespace) -> None:
             "family": spec.family,
             "seed": rng_seed,
             "dims": instance["dims"],
-            "knobs": task["knobs"],
+            "knobs": instance.get("knobs", task["knobs"]),
             "witness": instance.get("witness", {}),
+            "reference": {"has_reference": bool(instance.get("reference"))},
         }
         diag = diagnostics.compute(spec.problem_id, arrays)
         meta["diagnostics"] = diag
@@ -93,6 +94,8 @@ def cmd_report(args: argparse.Namespace) -> None:
         report.write_markdown(Path(args.save_md), rows)
     if args.save_csv:
         report.write_csv(Path(args.save_csv), rows)
+    if args.save_json:
+        report.write_json(Path(args.save_json), rows)
     for row in rows:
         print(json.dumps(row, indent=2))
 
@@ -133,6 +136,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_report.add_argument("--root", required=True)
     p_report.add_argument("--save-md", default="")
     p_report.add_argument("--save-csv", default="")
+    p_report.add_argument("--save-json", default="")
     p_report.set_defaults(func=cmd_report)
 
     p_solve = sub.add_parser("solve")

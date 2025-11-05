@@ -1,9 +1,11 @@
-"""Report generation for suites."""
+"""Reporting utilities for suite-wide feasibility checks."""
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from pathlib import Path
+from statistics import median
 from typing import Dict, Iterable, List
 
 from .diagnostics import compute
@@ -12,51 +14,53 @@ from ..io import load_instance
 
 
 def summarize_instances(paths: Iterable[Path]) -> List[Dict[str, str]]:
+    """Load instances and build per-instance diagnostic rows."""
+
     rows: List[Dict[str, str]] = []
     for inst_dir in paths:
         meta, arrays = load_instance(inst_dir)
-        diag = compute(meta["id"], arrays)
+        diag = meta.get("diagnostics") or compute(meta["id"], arrays)
         ok = verify(meta["id"], meta, arrays)
-        row = {
+        row: Dict[str, str] = {
             "id": meta["id"],
+            "family": meta.get("family", "unknown"),
             "path": str(inst_dir),
             "feasible": "yes" if ok else "no",
         }
         for key, val in diag.items():
-            row[key] = f"{val:.3e}"
+            row[key] = f"{val:.5e}"
         rows.append(row)
     return rows
 
 
-def textual_overview(rows: List[Dict[str, str]]) -> str:
-    if not rows:
-        return "No instances available."
-    by_id = defaultdict(list)
-    for row in rows:
-        by_id[row["id"]].append(row)
-    lines = []
-    for pid, items in by_id.items():
-        lines.append(f"### {pid}")
-        feas = sum(1 for r in items if r["feasible"] == "yes")
-        lines.append(f"Feasibility: {feas}/{len(items)}")
-        for key in items[0].keys():
-            if key in {"id", "path", "feasible"}:
-                continue
-            vals = [float(r[key]) for r in items]
-            lines.append(f"- {key}: min={min(vals):.2e}, median={sorted(vals)[len(vals)//2]:.2e}, max={max(vals):.2e}")
-    return "\n".join(lines)
-
-
 def write_markdown(md_path: Path, rows: List[Dict[str, str]]) -> None:
+    """Create a Markdown report summarising feasibility and diagnostics."""
+
     md_path.parent.mkdir(parents=True, exist_ok=True)
+    keys = sorted({k for row in rows for k in row.keys() if k not in {"id", "family", "path", "feasible"}})
     with md_path.open("w", encoding="utf-8") as fh:
-        fh.write("# uobench Feasibility Summary\n\n")
-        fh.write(textual_overview(rows))
-        fh.write("\n")
-        fh.write("\n| id | feasible | path |\n")
-        fh.write("|---|---|---|\n")
+        fh.write("# uobench Feasibility Report\n\n")
+        by_problem: Dict[str, List[Dict[str, str]]] = defaultdict(list)
         for row in rows:
-            fh.write(f"| {row['id']} | {row['feasible']} | {row['path']} |\n")
+            by_problem[row["id"]].append(row)
+        for pid, plist in sorted(by_problem.items()):
+            fh.write(f"## {pid}\n")
+            feas = sum(1 for r in plist if r["feasible"] == "yes")
+            fh.write(f"Feasibility: {feas}/{len(plist)} instances verified.\n\n")
+            for key in keys:
+                vals = [float(r[key]) for r in plist if key in r]
+                if not vals:
+                    continue
+                fh.write(
+                    f"- {key}: min={min(vals):.3e}, median={median(vals):.3e}, max={max(vals):.3e}\n"
+                )
+            fh.write("\n")
+        fh.write("\n### Instance table\n")
+        headers = ["id", "feasible", "path", *keys]
+        fh.write("| " + " | ".join(headers) + " |\n")
+        fh.write("|" + " --- |" * len(headers) + "\n")
+        for row in rows:
+            fh.write("| " + " | ".join(row.get(h, "") for h in headers) + " |\n")
 
 
 def write_csv(csv_path: Path, rows: List[Dict[str, str]]) -> None:
@@ -65,5 +69,10 @@ def write_csv(csv_path: Path, rows: List[Dict[str, str]]) -> None:
     with csv_path.open("w", encoding="utf-8") as fh:
         fh.write(",".join(keys) + "\n")
         for row in rows:
-            fh.write(",".join(row.get(k, "" ) for k in keys) + "\n")
+            fh.write(",".join(row.get(k, "") for k in keys) + "\n")
 
+
+def write_json(json_path: Path, rows: List[Dict[str, str]]) -> None:
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    with json_path.open("w", encoding="utf-8") as fh:
+        json.dump(rows, fh, indent=2)

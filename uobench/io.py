@@ -40,7 +40,7 @@ def load_instance(path: str | Path) -> Tuple[Dict, Dict[str, np.ndarray]]:
     path = Path(path)
     with (path / "meta.json").open("r", encoding="utf-8") as fh:
         meta = json.load(fh)
-    arrays = np.load(path / "data.npz")
+    arrays = np.load(path / "data.npz", allow_pickle=True)
     return meta, {k: arrays[k] for k in arrays.files}
 
 
