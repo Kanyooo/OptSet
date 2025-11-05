@@ -19,7 +19,15 @@ from typing import Callable, Dict, Iterable, List, Optional
 
 import numpy as np
 
-from .io import load_instance
+try:  # pragma: no cover - import shim for direct script execution
+    from .io import load_instance
+except ImportError:  # pragma: no cover
+    import sys
+
+    PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+    if str(PACKAGE_ROOT) not in sys.path:
+        sys.path.insert(0, str(PACKAGE_ROOT))
+    from uobgen.io import load_instance
 
 @dataclass
 class PropertyReport:
