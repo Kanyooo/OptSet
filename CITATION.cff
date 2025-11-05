@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: "UOBGen: Unified Optimization Benchmark Generator"
+authors:
+  - family-names: Codex
+    given-names: OptSet
+version: 0.1.0
+date-released: 2024-01-01
+license: Apache-2.0
+repository-code: https://example.com/uobgen
