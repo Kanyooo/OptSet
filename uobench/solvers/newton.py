@@ -6,7 +6,7 @@ from typing import Dict
 
 import numpy as np
 
-from .gd import _gradient, _objective, _infer_dim
+from .gd import _gradient, _objective, _infer_dim, _maybe_plot
 
 
 def _hessian(problem_id: str, arrays: Dict[str, np.ndarray], x: np.ndarray) -> np.ndarray:
@@ -22,7 +22,13 @@ def _hessian(problem_id: str, arrays: Dict[str, np.ndarray], x: np.ndarray) -> n
     return np.eye(len(x))
 
 
-def solve_newton(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 100, tol: float = 1e-6) -> Dict:
+def solve_newton(
+    problem_id: str,
+    arrays: Dict[str, np.ndarray],
+    max_iter: int = 100,
+    tol: float = 1e-6,
+    plot: bool = False,
+) -> Dict:
     n = _infer_dim(arrays)
     x = np.zeros(n)
     history = {"f": [], "step": [], "kkt": []}
@@ -35,7 +41,15 @@ def solve_newton(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int =
         step = np.linalg.solve(H_reg, grad)
         if np.linalg.norm(grad, ord=np.inf) < tol:
             history["kkt"].append(float(np.linalg.norm(grad)))
-            return {"x": x, "status": "converged", "iters": it, "history": history, "obj": _objective(problem_id, arrays, x)}
+            history["f"].append(_objective(problem_id, arrays, x))
+            _maybe_plot(history, f"Newton on {problem_id}", "Objective", plot)
+            return {
+                "x": x,
+                "status": "converged",
+                "iters": it,
+                "history": history,
+                "obj": _objective(problem_id, arrays, x),
+            }
         t = 1.0
         f = _objective(problem_id, arrays, x)
         while t > 1e-8:
@@ -48,4 +62,12 @@ def solve_newton(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int =
         history["f"].append(f)
         history["step"].append(t)
         history["kkt"].append(float(np.linalg.norm(grad)))
-    return {"x": x, "status": "max_iter", "iters": max_iter, "history": history, "obj": _objective(problem_id, arrays, x)}
+    history["f"].append(_objective(problem_id, arrays, x))
+    _maybe_plot(history, f"Newton on {problem_id}", "Objective", plot)
+    return {
+        "x": x,
+        "status": "max_iter",
+        "iters": max_iter,
+        "history": history,
+        "obj": _objective(problem_id, arrays, x),
+    }

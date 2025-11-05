@@ -106,7 +106,13 @@ def cmd_solve(args: argparse.Namespace) -> None:
         raise SystemExit(f"Unknown solver {args.solver}")
     meta, arrays = load_instance(inst_dir)
     solver_fn = SOLVER_DISPATCH[args.solver]
-    result = solver_fn(problem_id=meta["id"], arrays=arrays, max_iter=args.max_iter, tol=args.tol)
+    result = solver_fn(
+        problem_id=meta["id"],
+        arrays=arrays,
+        max_iter=args.max_iter,
+        tol=args.tol,
+        plot=args.plot,
+    )
     print(json.dumps({"status": result["status"], "iters": result["iters"], "final": result["history"].get("f", [])[-1] if result["history"].get("f") else None}, indent=2))
 
 
@@ -144,6 +150,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_solve.add_argument("--solver", required=True)
     p_solve.add_argument("--max-iter", type=int, default=500)
     p_solve.add_argument("--tol", type=float, default=1e-6)
+    p_solve.add_argument("--plot", action="store_true", help="Display descent curve via matplotlib")
     p_solve.set_defaults(func=cmd_solve)
 
     p_info = sub.add_parser("load-info")

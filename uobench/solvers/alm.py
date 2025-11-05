@@ -6,7 +6,7 @@ from typing import Dict
 
 import numpy as np
 
-from .gd import _gradient, _objective, _infer_dim
+from .gd import _gradient, _objective, _infer_dim, _maybe_plot
 
 
 def solve_alm(
@@ -15,6 +15,7 @@ def solve_alm(
     max_iter: int = 100,
     tol: float = 1e-6,
     inner: str = "gd",
+    plot: bool = False,
 ) -> Dict:
     """Solve equality-constrained problems using a simple ALM scheme."""
 
@@ -49,6 +50,8 @@ def solve_alm(
         history["kkt"].append(float(np.linalg.norm(grad)))
         history["f"].append(float(_objective(problem_id, arrays, x)))
         if prim < tol and dual < tol:
+            _maybe_plot(history, f"ALM on {problem_id}", "Objective", plot)
             return {"x": x, "status": "converged", "iters": it, "history": history, "obj": _objective(problem_id, arrays, x)}
         rho = min(rho * 1.5, 1e4)
+    _maybe_plot(history, f"ALM on {problem_id}", "Objective", plot)
     return {"x": x, "status": "max_iter", "iters": max_iter, "history": history, "obj": _objective(problem_id, arrays, x)}

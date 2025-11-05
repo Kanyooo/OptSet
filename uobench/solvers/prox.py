@@ -7,7 +7,7 @@ from typing import Dict
 import numpy as np
 
 from ..utils.linalg import project_box, project_simplex, project_ball
-from .gd import _objective, _infer_dim
+from .gd import _objective, _infer_dim, _maybe_plot
 
 
 def prox_l1(v: np.ndarray, lam: float) -> np.ndarray:
@@ -18,7 +18,13 @@ def prox_l2(v: np.ndarray, lam: float) -> np.ndarray:
     return v / (1 + lam)
 
 
-def solve_fista(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 100, tol: float = 1e-6) -> Dict:
+def solve_fista(
+    problem_id: str,
+    arrays: Dict[str, np.ndarray],
+    max_iter: int = 100,
+    tol: float = 1e-6,
+    plot: bool = False,
+) -> Dict:
     A = arrays.get("A")
     if A is None:
         raise ValueError("FISTA requires matrix A")
@@ -41,11 +47,19 @@ def solve_fista(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 
         t = t_new
         history["f"].append(float(0.5 * np.linalg.norm(A @ x - arrays["y"]) ** 2 + arrays.get("lambda", 0.1) * np.linalg.norm(x, 1)))
         if np.linalg.norm(grad, ord=np.inf) < tol:
+            _maybe_plot(history, f"FISTA on {problem_id}", "Objective", plot)
             return {"x": x, "status": "converged", "iters": k, "history": history, "obj": history["f"][-1]}
+    _maybe_plot(history, f"FISTA on {problem_id}", "Objective", plot)
     return {"x": x, "status": "max_iter", "iters": max_iter, "history": history, "obj": history["f"][-1]}
 
 
-def solve_projected_gd(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 200, tol: float = 1e-6) -> Dict:
+def solve_projected_gd(
+    problem_id: str,
+    arrays: Dict[str, np.ndarray],
+    max_iter: int = 200,
+    tol: float = 1e-6,
+    plot: bool = False,
+) -> Dict:
     if problem_id == "A5_TRS":
         proj = lambda z: project_ball(z, arrays["delta"])
         grad_fn = lambda x: arrays["H"] @ x + arrays["g"]
@@ -67,7 +81,10 @@ def solve_projected_gd(problem_id: str, arrays: Dict[str, np.ndarray], max_iter:
     for it in range(max_iter):
         grad = grad_fn(x)
         if np.linalg.norm(grad, ord=np.inf) < tol:
+            history["f"].append(float(np.linalg.norm(grad)))
+            _maybe_plot(history, f"Projected GD on {problem_id}", "Gradient norm", plot)
             return {"x": x, "status": "converged", "iters": it, "history": history, "obj": float(np.linalg.norm(grad))}
         x = proj(x - 0.1 * grad)
         history["f"].append(float(np.linalg.norm(grad)))
+    _maybe_plot(history, f"Projected GD on {problem_id}", "Gradient norm", plot)
     return {"x": x, "status": "max_iter", "iters": max_iter, "history": history, "obj": history["f"][-1] if history["f"] else None}

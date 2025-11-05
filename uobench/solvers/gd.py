@@ -1,4 +1,4 @@
-"""Gradient descent baseline."""
+"""Gradient descent baseline with optional descent plotting."""
 
 from __future__ import annotations
 
@@ -51,7 +51,36 @@ def _gradient(problem_id: str, arrays: Dict[str, np.ndarray], x: np.ndarray) -> 
     return x
 
 
-def solve_gd(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 500, tol: float = 1e-6) -> Dict:
+def _maybe_plot(history: Dict[str, list], title: str, ylabel: str, plot: bool) -> None:
+    if not plot:
+        return
+    import os
+    import matplotlib
+
+    if os.environ.get("DISPLAY", "") == "":
+        matplotlib.use("Agg", force=True)
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    values = history.get("f", [])
+    if not values:
+        return
+    ax.plot(range(len(values)), values, marker="o", linewidth=1.5)
+    ax.set_title(title)
+    ax.set_xlabel("Iteration")
+    ax.set_ylabel(ylabel)
+    ax.grid(True, which="both", linestyle="--", linewidth=0.5)
+    fig.tight_layout()
+    plt.show()
+
+
+def solve_gd(
+    problem_id: str,
+    arrays: Dict[str, np.ndarray],
+    max_iter: int = 500,
+    tol: float = 1e-6,
+    plot: bool = False,
+) -> Dict:
     n = _infer_dim(arrays)
     x = np.zeros(n)
     history = {"f": [], "step": []}
@@ -60,7 +89,15 @@ def solve_gd(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 500
         grad = _gradient(problem_id, arrays, x)
         norm = np.linalg.norm(grad, ord=np.inf)
         if norm < tol:
-            return {"x": x, "status": "converged", "iters": it, "history": history, "obj": _objective(problem_id, arrays, x)}
+            history["f"].append(_objective(problem_id, arrays, x))
+            _maybe_plot(history, f"GD on {problem_id}", "Objective", plot)
+            return {
+                "x": x,
+                "status": "converged",
+                "iters": it,
+                "history": history,
+                "obj": _objective(problem_id, arrays, x),
+            }
         f = _objective(problem_id, arrays, x)
         t = alpha
         while t > 1e-8:
@@ -73,4 +110,12 @@ def solve_gd(problem_id: str, arrays: Dict[str, np.ndarray], max_iter: int = 500
         history["f"].append(f)
         history["step"].append(t)
         alpha = t * 1.5
-    return {"x": x, "status": "max_iter", "iters": max_iter, "history": history, "obj": _objective(problem_id, arrays, x)}
+    history["f"].append(_objective(problem_id, arrays, x))
+    _maybe_plot(history, f"GD on {problem_id}", "Objective", plot)
+    return {
+        "x": x,
+        "status": "max_iter",
+        "iters": max_iter,
+        "history": history,
+        "obj": _objective(problem_id, arrays, x),
+    }
