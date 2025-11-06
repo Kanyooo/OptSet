@@ -14,6 +14,8 @@ def _infer_dim(arrays: Dict[str, np.ndarray]) -> int:
         return arrays["A"].shape[1]
     if "H" in arrays:
         return arrays["H"].shape[0]
+    if "M" in arrays:
+        return arrays["M"].shape[0]
     if "x_true" in arrays:
         return arrays["x_true"].shape[0]
     if "shape" in arrays:
