@@ -1,4 +1,4 @@
-"""Damped Newton method."""
+"""Damped Newton method with feasibility monitoring."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import Dict
 import numpy as np
 
 from .gd import _gradient, _objective, _infer_dim, _maybe_plot
+from .kkt import constraint_violation_inf
 
 
 def _hessian(problem_id: str, arrays: Dict[str, np.ndarray], x: np.ndarray) -> np.ndarray:
@@ -29,9 +30,11 @@ def solve_newton(
     tol: float = 1e-6,
     plot: bool = False,
 ) -> Dict:
+    """Run damped Newton iterations with line search and plotting."""
+
     n = _infer_dim(arrays)
     x = np.zeros(n)
-    history = {"f": [], "step": [], "kkt": []}
+    history = {"f": [], "step": [], "kkt": [], "constraint": []}
     for it in range(max_iter):
         grad = _gradient(problem_id, arrays, x)
         H = _hessian(problem_id, arrays, x)
@@ -39,16 +42,19 @@ def solve_newton(
         shift = max(0.0, -np.min(eigs)) + 1e-6
         H_reg = H + shift * np.eye(n)
         step = np.linalg.solve(H_reg, grad)
-        if np.linalg.norm(grad, ord=np.inf) < tol:
+        violation = constraint_violation_inf(problem_id, arrays, x)
+        if np.linalg.norm(grad, ord=np.inf) < tol and violation < 10 * tol:
+            f_val = _objective(problem_id, arrays, x)
             history["kkt"].append(float(np.linalg.norm(grad)))
-            history["f"].append(_objective(problem_id, arrays, x))
+            history["f"].append(f_val)
+            history["constraint"].append(violation)
             _maybe_plot(history, f"Newton on {problem_id}", "Objective", plot)
             return {
                 "x": x,
                 "status": "converged",
                 "iters": it,
                 "history": history,
-                "obj": _objective(problem_id, arrays, x),
+                "obj": f_val,
             }
         t = 1.0
         f = _objective(problem_id, arrays, x)
@@ -62,12 +68,15 @@ def solve_newton(
         history["f"].append(f)
         history["step"].append(t)
         history["kkt"].append(float(np.linalg.norm(grad)))
-    history["f"].append(_objective(problem_id, arrays, x))
+        history["constraint"].append(violation)
+    final_obj = _objective(problem_id, arrays, x)
+    history["f"].append(final_obj)
+    history["constraint"].append(constraint_violation_inf(problem_id, arrays, x))
     _maybe_plot(history, f"Newton on {problem_id}", "Objective", plot)
     return {
         "x": x,
         "status": "max_iter",
         "iters": max_iter,
         "history": history,
-        "obj": _objective(problem_id, arrays, x),
+        "obj": final_obj,
     }

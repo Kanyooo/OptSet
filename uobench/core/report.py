@@ -26,9 +26,17 @@ def summarize_instances(paths: Iterable[Path]) -> List[Dict[str, str]]:
             "family": meta.get("family", "unknown"),
             "path": str(inst_dir),
             "feasible": "yes" if ok else "no",
+            "seed": str(meta.get("seed", "")),
         }
+        for dim_name, dim_val in (meta.get("dims") or {}).items():
+            row[f"dim_{dim_name}"] = str(dim_val)
+        for knob_name, knob_val in (meta.get("knobs") or {}).items():
+            row[f"knob_{knob_name}"] = str(knob_val)
+        witness = meta.get("witness") or {}
+        if witness:
+            row["witness"] = witness.get("cert_type", "provided")
         for key, val in diag.items():
-            row[key] = f"{val:.5e}"
+            row[f"diag_{key}"] = f"{val:.5e}"
         rows.append(row)
     return rows
 
@@ -37,7 +45,14 @@ def write_markdown(md_path: Path, rows: List[Dict[str, str]]) -> None:
     """Create a Markdown report summarising feasibility and diagnostics."""
 
     md_path.parent.mkdir(parents=True, exist_ok=True)
-    keys = sorted({k for row in rows for k in row.keys() if k not in {"id", "family", "path", "feasible"}})
+    keys = sorted(
+        {
+            k
+            for row in rows
+            for k in row.keys()
+            if k not in {"id", "family", "path", "feasible"}
+        }
+    )
     with md_path.open("w", encoding="utf-8") as fh:
         fh.write("# uobench Feasibility Report\n\n")
         by_problem: Dict[str, List[Dict[str, str]]] = defaultdict(list)

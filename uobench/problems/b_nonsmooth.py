@@ -122,9 +122,17 @@ def generate_b3_svm(seed: int, knobs: Dict, extreme: bool) -> Dict:
     X_neg = rng.multivariate_normal(-mu, cov, size=m - half)
     A = np.vstack([X_pos, X_neg])
     y = np.concatenate([np.ones(half), -np.ones(m - half)])
-    data = {"A": A, "y": y, "gamma": gamma, "mu": mu}
+    proj_radius = float(knobs.get("proj_radius", np.sqrt(n)))
+    data = {"A": A, "y": y, "gamma": gamma, "mu": mu, "proj_radius": proj_radius}
     dims = {"m": m, "n": n}
-    used_knobs = {"m": m, "n": n, "rho": rho, "mu_norm": mu_norm, "gamma": gamma}
+    used_knobs = {
+        "m": m,
+        "n": n,
+        "rho": rho,
+        "mu_norm": mu_norm,
+        "gamma": gamma,
+        "proj_radius": proj_radius,
+    }
     return {
         "data": data,
         "dims": dims,

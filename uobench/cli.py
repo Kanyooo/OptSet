@@ -96,6 +96,11 @@ def cmd_report(args: argparse.Namespace) -> None:
         report.write_csv(Path(args.save_csv), rows)
     if args.save_json:
         report.write_json(Path(args.save_json), rows)
+    total = len(rows)
+    feasible = sum(1 for r in rows if r.get("feasible") == "yes")
+    print(f"Collected {total} instances; {feasible} passed witness verification.")
+    families = sorted({r.get("family", "") for r in rows})
+    print("Families covered:", ", ".join(families))
     for row in rows:
         print(json.dumps(row, indent=2))
 

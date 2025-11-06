@@ -29,7 +29,7 @@ def solve_alm(
     x = np.zeros(n)
     lam = np.zeros(m)
     rho = 1.0
-    history = {"prim_resid": [], "dual_resid": [], "kkt": [], "f": []}
+    history = {"prim_resid": [], "dual_resid": [], "kkt": [], "f": [], "constraint": []}
 
     for it in range(max_iter):
         grad = _gradient(problem_id, arrays, x) + A.T @ (lam + rho * (A @ x - d))
@@ -49,6 +49,7 @@ def solve_alm(
         history["dual_resid"].append(float(dual))
         history["kkt"].append(float(np.linalg.norm(grad)))
         history["f"].append(float(_objective(problem_id, arrays, x)))
+        history["constraint"].append(float(np.linalg.norm(r, ord=np.inf)))
         if prim < tol and dual < tol:
             _maybe_plot(history, f"ALM on {problem_id}", "Objective", plot)
             return {"x": x, "status": "converged", "iters": it, "history": history, "obj": _objective(problem_id, arrays, x)}

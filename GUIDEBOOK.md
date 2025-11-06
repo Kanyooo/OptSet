@@ -19,10 +19,10 @@
    ```bash
    pip install numpy scipy matplotlib pytest
    ```
-3. 直接运行根目录下的 `example.py` 可以验证环境是否就绪。该脚本会：
-   - 通过 Python API 生成若干 S 规模实例；
-   - 调用求解器并绘制下降曲线；
-   - 导出 Markdown/CSV/JSON 报告。
+3. 打开根目录下的 `example.ipynb` Notebook，按照单元从上到下执行即可：
+   - 通过 Python API 生成若干 S 规模实例（附带关键参数注释）；
+   - 自动调用求解器并绘制目标值与约束违反度（∞ 范数）两条曲线；
+   - 导出包含维度、旋钮、诊断信息的 Markdown/CSV/JSON 报告。
 
 项目目录结构：
 ```
@@ -33,7 +33,7 @@ uobench/
   solvers/              # GD/BB/Newton/ALM/FISTA 等求解器
   utils/                # RNG、线性代数、统计工具
 config/suites/core18.yaml
-example.py              # Python API 使用范例
+example.ipynb           # Notebook 版 Python API 实操教程
 ```
 
 ---
@@ -84,14 +84,14 @@ example.py              # Python API 使用范例
 
 | 模块 | 函数 | 关键输入 | 绘图开关 | 说明 |
 | ---- | ---- | ---- | ---- | ---- |
-| `uobench.solvers.gd` | `solve_gd(problem_id, arrays, max_iter=500, tol=1e-6, plot=False)` | `problem_id`：问题 ID；`arrays`：数据；`max_iter`、`tol`：终止条件 | `plot=True` 时会使用 Matplotlib 绘制目标值下降曲线。 | 对无约束或简单正则化问题的梯度下降（Armijo 回溯）。 |
-| `uobench.solvers.bb` | `solve_bb(..., plot=False)` | 同上 | 同上 | Barzilai–Borwein 步长选择的梯度法。 |
-| `uobench.solvers.newton` | `solve_newton(..., plot=False)` | 同上 | 同上 | 阻尼牛顿法，自动为非正定 Hessian 添加移位。 |
-| `uobench.solvers.alm` | `solve_alm(problem_id, arrays, max_iter=100, tol=1e-6, inner='gd', plot=False)` | 需要 `arrays` 中包含 `A`、`d` 等约束信息 | 同上 | 增广拉格朗日法。`inner` 参数保留用于自定义内部解算器；当前默认按闭式/梯度法更新。 |
-| `uobench.solvers.prox` | `solve_fista(problem_id, arrays, max_iter=100, tol=1e-6, plot=False)` | 适合 LASSO/Elastic Net/BP 等问题 | 同上 | ISTA/FISTA；`history['f']` 记录目标值。 |
-| `uobench.solvers.prox` | `solve_projected_gd(problem_id, arrays, max_iter=200, tol=1e-6, plot=False)` | 支持盒约束、球约束、单纯形投影 | 同上 | 投影梯度法；`history['f']` 保存梯度范数，图像展示收敛过程。 |
+| `uobench.solvers.gd` | `solve_gd(problem_id, arrays, max_iter=500, tol=1e-6, plot=False)` | `problem_id`：问题 ID；`arrays`：数据；`max_iter`、`tol`：终止条件 | `plot=True` 时绘制目标值与约束违反度（若存在）双图。 | 对无约束或简单正则化问题的梯度下降（Armijo 回溯）。 |
+| `uobench.solvers.bb` | `solve_bb(..., plot=False)` | 同上 | 同上 | Barzilai–Borwein 步长选择的梯度法，同样输出目标值与约束违反度。 |
+| `uobench.solvers.newton` | `solve_newton(..., plot=False)` | 同上 | 同上 | 阻尼牛顿法，自动为非正定 Hessian 添加移位，并记录 `history['constraint']`。 |
+| `uobench.solvers.alm` | `solve_alm(problem_id, arrays, max_iter=100, tol=1e-6, inner='gd', plot=False)` | 需要 `arrays` 中包含 `A`、`d` 等约束信息 | 同上 | 增广拉格朗日法；绘图时 `history['constraint']` 等价于原始残差的 ∞ 范数。 |
+| `uobench.solvers.prox` | `solve_fista(problem_id, arrays, max_iter=100, tol=1e-6, plot=False)` | 适合 LASSO/Elastic Net/BP 等问题 | 同上 | ISTA/FISTA；图像展示目标值及等式残差（若存在）。 |
+| `uobench.solvers.prox` | `solve_projected_gd(problem_id, arrays, max_iter=200, tol=1e-6, plot=False)` | 支持盒约束、球约束、单纯形投影 | 同上 | 投影梯度法；`history['f']` 保存梯度范数，同时绘制约束违反度。 |
 
-> **绘图细节**：当 `plot=True` 时，函数内部会使用 `matplotlib` 的 `Agg` 后端绘制折线图并调用 `plt.show()`。在 PyCharm 中运行脚本会自动弹出窗口或在 SciView 中显示曲线。
+> **绘图细节**：当 `plot=True` 时，函数内部会使用 `matplotlib` 的 `Agg` 后端绘制折线图并调用 `plt.show()`。若问题带约束，会额外绘制 `history['constraint']`（∞ 范数）曲线；在 PyCharm 中运行 Notebook/脚本会自动弹出窗口或在 SciView 中显示图像。
 
 ---
 
@@ -139,7 +139,7 @@ print(inst["diagnostics"]["cond_Q"])  # 极端模式下会显著增大条件数
 ```bash
 python -m uobench.cli generate --suite core18 --scales S --out ./datasets --seed 7 --extreme
 ```
-或者在 Python 中调用 `uobench.cli` 提供的函数（参考 `example.py`）。
+或者在 Python 中调用 `uobench.cli` 提供的函数（参考 `example.ipynb` 中的封装单元）。
 
 ---
 
@@ -223,15 +223,16 @@ result = solve_fista("B1_LASSO", arrays, max_iter=200, plot=True)
 
 ---
 
-## 6. 参考脚本：`example.py`
+## 6. Notebook 导览：`example.ipynb`
 
-`example.py` 演示了完整的 Python 工作流：
+Notebook 中按章节组织了完整的 Python 工作流：
 
-1. `prepare_instances` 使用 `PROBLEM_REGISTRY` 和 `save_instance` 生成五个示例问题。
-2. `solve_subset` 逐个载入实例、验证可行性证书，并调用 `solve_gd`/`solve_alm`/`solve_fista`，在每次求解时自动绘制下降曲线。
-3. `emit_report` 调用 `uobench.core.report` 生成 Markdown、CSV、JSON 三种格式的汇总报告。
+1. **Generate demo suite**：使用 `PROBLEM_REGISTRY` 与 `save_instance` 批量生成五个 S 规模问题，并在单元格注释中解释每个旋钮和保存路径格式。
+2. **Inspect & verify**：调用 `load_instance`、`witness.verify` 与 `diagnostics.compute` 展示如何读取 `meta.json` 与 `data.npz`，并打印出维度、种子、诊断指标。
+3. **Solve and plot**：针对 `A1_QP`、`A4_ECQP`、`B1_LASSO`、`C2_LCP`、`D2_BP` 分别调用 `solve_gd`、`solve_alm`、`solve_fista` 等求解器；每次运行都会生成“目标值 vs. 迭代”与“约束违反度 vs. 迭代”的双图，并打印迭代次数、终止状态。
+4. **Reporting**：展示如何通过 `uobench.core.report` 创建 Markdown/CSV/JSON 三类报告，输出中包含 `seed`、`dim_*`、`knob_*`、`diag_*` 等字段，便于记录和复现实验。
 
-运行该脚本即可查看所有流程的标准写法，并可根据需要复制到自己的项目或 Notebook 中进一步扩展。
+按照 Notebook 顺序执行即可快速熟悉各模块的典型调用方式，也可复制相关单元格至个人研究 Notebook 中按需改写。
 
 ---
 

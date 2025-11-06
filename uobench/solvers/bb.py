@@ -1,4 +1,4 @@
-"""Barzilai–Borwein gradient descent."""
+"""Barzilai–Borwein gradient method with diagnostic plotting."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import Dict
 import numpy as np
 
 from .gd import _gradient, _objective, _infer_dim, _maybe_plot
+from .kkt import constraint_violation_inf
 
 
 def solve_bb(
@@ -16,21 +17,26 @@ def solve_bb(
     tol: float = 1e-6,
     plot: bool = False,
 ) -> Dict:
+    """Run the Barzilai–Borwein method with BB1/BB2 step safeguards."""
+
     n = _infer_dim(arrays)
     x = np.zeros(n)
-    history = {"f": [], "step": []}
+    history = {"f": [], "step": [], "constraint": []}
     grad = _gradient(problem_id, arrays, x)
     alpha = 1.0
     for it in range(max_iter):
-        if np.linalg.norm(grad, ord=np.inf) < tol:
-            history["f"].append(_objective(problem_id, arrays, x))
+        violation = constraint_violation_inf(problem_id, arrays, x)
+        if np.linalg.norm(grad, ord=np.inf) < tol and violation < 10 * tol:
+            f_val = _objective(problem_id, arrays, x)
+            history["f"].append(f_val)
+            history["constraint"].append(violation)
             _maybe_plot(history, f"BB on {problem_id}", "Objective", plot)
             return {
                 "x": x,
                 "status": "converged",
                 "iters": it,
                 "history": history,
-                "obj": _objective(problem_id, arrays, x),
+                "obj": f_val,
             }
         s = -alpha * grad
         x_new = x + s
@@ -43,13 +49,16 @@ def solve_bb(
         x = x_new
         grad = grad_new
         history["f"].append(_objective(problem_id, arrays, x))
+        history["constraint"].append(violation)
         history["step"].append(alpha)
-    history["f"].append(_objective(problem_id, arrays, x))
+    final_obj = _objective(problem_id, arrays, x)
+    history["f"].append(final_obj)
+    history["constraint"].append(constraint_violation_inf(problem_id, arrays, x))
     _maybe_plot(history, f"BB on {problem_id}", "Objective", plot)
     return {
         "x": x,
         "status": "max_iter",
         "iters": max_iter,
         "history": history,
-        "obj": _objective(problem_id, arrays, x),
+        "obj": final_obj,
     }
