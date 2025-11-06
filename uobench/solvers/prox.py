@@ -99,6 +99,8 @@ def solve_projected_gd(
         x = proj(x - 0.1 * grad)
         history["f"].append(float(np.linalg.norm(grad)))
         history["constraint"].append(violation)
+    final_grad = grad_fn(x)
+    history["f"].append(float(np.linalg.norm(final_grad)))
     history["constraint"].append(constraint_violation_inf(problem_id, arrays, x))
     _maybe_plot(history, f"Projected GD on {problem_id}", "Gradient norm", plot)
     return {"x": x, "status": "max_iter", "iters": max_iter, "history": history, "obj": history["f"][-1] if history["f"] else None}

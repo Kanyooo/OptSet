@@ -63,11 +63,18 @@ def write_markdown(md_path: Path, rows: List[Dict[str, str]]) -> None:
             feas = sum(1 for r in plist if r["feasible"] == "yes")
             fh.write(f"Feasibility: {feas}/{len(plist)} instances verified.\n\n")
             for key in keys:
-                vals = [float(r[key]) for r in plist if key in r]
-                if not vals:
+                numeric_vals = []
+                for r in plist:
+                    if key not in r:
+                        continue
+                    try:
+                        numeric_vals.append(float(r[key]))
+                    except (TypeError, ValueError):
+                        continue
+                if not numeric_vals:
                     continue
                 fh.write(
-                    f"- {key}: min={min(vals):.3e}, median={median(vals):.3e}, max={max(vals):.3e}\n"
+                    f"- {key}: min={min(numeric_vals):.3e}, median={median(numeric_vals):.3e}, max={max(numeric_vals):.3e}\n"
                 )
             fh.write("\n")
         fh.write("\n### Instance table\n")

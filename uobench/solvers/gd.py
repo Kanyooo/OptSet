@@ -68,6 +68,11 @@ def _maybe_plot(history: Dict[str, list], title: str, ylabel: str, plot: bool) -
     if not values:
         return
     has_constraint = "constraint" in history and history["constraint"]
+    constr_vals = history.get("constraint", []) if has_constraint else []
+    if has_constraint and len(constr_vals) != len(values):
+        common = min(len(values), len(constr_vals))
+        values = values[:common]
+        constr_vals = constr_vals[:common]
     if has_constraint:
         fig, axes = plt.subplots(1, 2, figsize=(10, 4))
         obj_ax, constr_ax = axes
@@ -81,7 +86,6 @@ def _maybe_plot(history: Dict[str, list], title: str, ylabel: str, plot: bool) -
     obj_ax.set_ylabel(ylabel)
     obj_ax.grid(True, which="both", linestyle="--", linewidth=0.5)
     if constr_ax is not None:
-        constr_vals = history.get("constraint", [])
         constr_ax.plot(iterations, constr_vals, marker="s", color="#bb2121", linewidth=1.5)
         constr_ax.set_title("Constraint violation (∞-norm)")
         constr_ax.set_xlabel("Iteration")
