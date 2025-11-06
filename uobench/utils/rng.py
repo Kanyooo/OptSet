@@ -52,4 +52,8 @@ class RNG:
         else:
             tokens = [int(c) for c in counters]
         child = np.random.SeedSequence([int(self.seed), *tokens])
-        return RNG(seed=int(child.entropy))
+        # ``SeedSequence.entropy`` returns the input sequence as a tuple which
+        # cannot be cast to ``int`` directly.  Instead we draw a 32-bit state
+        # value to seed the child RNG, mirroring how ``SeedSequence.spawn``
+        # derives independent generators.
+        return RNG(seed=int(child.generate_state(1)[0]))
